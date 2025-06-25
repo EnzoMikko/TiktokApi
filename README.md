@@ -1,11 +1,11 @@
 # TikTok API Integration
 
-Une intégration élégante de l'API TikTok avec authentification OAuth et interface utilisateur moderne.
+Une intégration élégante de l'API TikTok avec authentification OAuth en popup et interface utilisateur moderne.
 
 ## Fonctionnalités
 
-- 🔐 Authentification OAuth TikTok
-- 👤 Affichage du profil utilisateur
+- 🔐 Authentification OAuth TikTok en popup
+- 👤 Affichage du profil utilisateur avec effet glassmorphism
 - 🎨 Interface utilisateur moderne style Apple
 - 🔄 Gestion automatique des tokens
 - 📱 Design responsive
@@ -51,12 +51,18 @@ La table Supabase `tiktok_tokens` doit contenir :
 
 ### `/oauth` (GET)
 - Initialise le processus d'authentification TikTok
-- Retourne l'URL de redirection TikTok
+- Retourne l'URL de redirection TikTok pour la popup
+- Format de réponse :
+```json
+{
+    "redirect_url": "https://www.tiktok.com/auth/..."
+}
+```
 
 ### `/webhook` (GET)
 - Gère le retour d'authentification TikTok
 - Sauvegarde les informations du créateur
-- Redirige vers la page d'accueil
+- Affiche une page de confirmation qui se ferme automatiquement
 
 ### `/user/profile` (GET)
 - Retourne les informations du profil utilisateur
@@ -77,7 +83,7 @@ La table Supabase `tiktok_tokens` doit contenir :
 
 ### Design Moderne
 - Dégradé de fond animé
-- Effet glassmorphism
+- Effet glassmorphism sur les boutons et le profil
 - Animations fluides
 - Police système optimisée
 - Support du mode sombre
@@ -118,6 +124,19 @@ body {
     animation: gradientBG 15s ease infinite;
 }
 
+.profile-avatar {
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.profile-avatar:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+}
+
 .tiktok-button {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
@@ -129,17 +148,17 @@ body {
 ## Flux d'Authentification
 
 1. L'utilisateur clique sur "Se connecter"
-2. Redirection vers l'authentification TikTok
-3. TikTok redirige vers `/webhook` avec le code
-4. Le backend traite l'authentification et sauvegarde les données
-5. Redirection automatique vers la page d'accueil
-6. Affichage du profil utilisateur
+2. Ouverture d'une popup d'authentification TikTok (500x700)
+3. L'utilisateur s'authentifie dans la popup
+4. TikTok redirige vers `/webhook` dans la popup
+5. La popup affiche un message de confirmation et se ferme
+6. La page principale se met à jour automatiquement avec le profil
 
 ## Sécurité
 
 - Tokens stockés de manière sécurisée
 - Gestion automatique des expirations
-- Protection CSRF
+- Protection CSRF avec état aléatoire
 - Headers sécurisés
 - HTTPS obligatoire
 
@@ -195,4 +214,4 @@ Les logs sont stockés dans `/logs/tiktok_api.log` avec rotation automatique.
 3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
 4. Push vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
-``` 
+```
