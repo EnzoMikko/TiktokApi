@@ -524,8 +524,13 @@ def get_profile():
     try:
         log("\n🎯 Requête de profil utilisateur reçue")
         
-        # Récupérer le dernier token actif
-        result = supabase.table('tiktok_tokens').select('*').eq('is_active', True).order('created_at', desc=True).limit(1).execute()
+        # Récupérer le dernier token actif avec les informations du créateur
+        result = supabase.table('tiktok_tokens') \
+            .select('*, creator_nickname, creator_avatar_url') \
+            .eq('is_active', True) \
+            .order('created_at', desc=True) \
+            .limit(1) \
+            .execute()
         
         if not result.data:
             log("❌ Aucun token actif trouvé", "warning", "⚠️")
@@ -535,24 +540,12 @@ def get_profile():
             }), 401
         
         token_data = result.data[0]
-        access_token = token_data.get('access_token')
         
-        # Récupérer les informations du profil
-        user_profile = get_user_profile(access_token)
-        
-        if not user_profile:
-            return jsonify({
-                'success': False,
-                'error': 'Erreur lors de la récupération du profil'
-            }), 500
-        
-        # Construire la réponse
+        # Construire la réponse avec les données déjà en base
         response_data = {
             'success': True,
-            'nickname': user_profile.get('display_name', ''),
-            'avatar_url': user_profile.get('avatar_url', ''),
-            'bio_description': user_profile.get('bio_description', ''),
-            'profile_deep_link': user_profile.get('profile_deep_link', '')
+            'nickname': token_data.get('creator_nickname', ''),
+            'avatar_url': token_data.get('creator_avatar_url', '')
         }
         
         log("✅ Profil utilisateur récupéré avec succès", "info", "🎉")
