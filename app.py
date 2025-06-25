@@ -306,100 +306,64 @@ def call_tiktok_api(code):
 
 @app.route('/oauth', methods=['GET'])
 def oauth():
-    """Endpoint pour initier le flux d'authentification TikTok"""
-    log("\n🔄 Démarrage du flux d'authentification TikTok")
-    
+    """Démarrer le processus d'authentification TikTok"""
     try:
-        # Générer un état CSRF sécurisé
-        csrf_state = secrets.token_urlsafe(32)
-        log(f"   État CSRF généré: {csrf_state[:10]}...")
+        log("\n🔐 Démarrage de l'authentification TikTok...")
         
-        # Construire l'URL d'autorisation
-        auth_url = f"{TIKTOK_AUTH_URL}?"
+        # Générer un état aléatoire pour la sécurité
+        state = secrets.token_urlsafe(32)
+        
+        # Construire l'URL d'authentification TikTok
         auth_params = {
             'client_key': TIKTOK_CLIENT_KEY,
-            'scope': 'user.info.basic',
             'response_type': 'code',
+            'scope': 'user.info.basic,video.list',
             'redirect_uri': TIKTOK_REDIRECT_URI,
-            'state': csrf_state
+            'state': state
         }
         
+        auth_url = f"{TIKTOK_AUTH_URL}?{'&'.join(f'{k}={v}' for k, v in auth_params.items())}"
+        
         if debug_mode:
-            log("   Paramètres d'autorisation:", "debug", "🔍")
-            log(f"   {json.dumps(auth_params, indent=2)}", "debug", "🔍")
+            log(f"   URL d'authentification: {auth_url}", "debug", "🔍")
         
-        # Créer un cookie sécurisé avec l'état CSRF
-        response = make_response(jsonify({
-            'redirect_url': auth_url + '&'.join(f"{k}={v}" for k, v in auth_params.items())
-        }))
-        
-        response.set_cookie(
-            'csrf_state',
-            csrf_state,
-            max_age=3600,
-            secure=True,
-            httponly=True,
-            samesite='Lax'
-        )
-        
-        log("✅ URL d'autorisation générée avec protection CSRF")
-        return response
+        # Retourner directement l'URL pour la popup
+        return jsonify({'redirect_url': auth_url})
         
     except Exception as e:
-        log(f"❌ ERREUR OAUTH: {str(e)}", "error", "💥")
+        log(f"❌ Erreur lors de la création de l'URL d'authentification: {str(e)}", "error", "💥")
         if debug_mode:
-            log("   Traceback complet:", "error", "🔍")
-            import traceback
             log(traceback.format_exc(), "error", "🔍")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
-    """Endpoint pour gérer le retour de l'authentification TikTok"""
+    """Gérer le retour d'authentification TikTok"""
     try:
-        log("\n🔄 Webhook TikTok reçu")
+        log("\n📨 Réception du webhook TikTok...")
         
         # Récupérer le code d'autorisation
         code = request.args.get('code')
-        
         if not code:
-            log("❌ Code d'autorisation manquant", "error", "⚠️")
-            return jsonify({
-                'success': False,
-                'error': 'Code d\'autorisation manquant'
-            }), 400
+            log("❌ Code d'autorisation manquant", "error", "💥")
+            return render_template('close.html', success=False, message="Code d'autorisation manquant")
         
-        # Appeler l'API TikTok
+        # Appeler l'API TikTok pour échanger le code
         token_data = call_tiktok_api(code)
-        
         if not token_data:
-            log("❌ Échec de l'appel à l'API TikTok", "error", "💥")
-            return jsonify({
-                'success': False,
-                'error': 'Échec de l\'authentification TikTok'
-            }), 500
+            return render_template('close.html', success=False, message="Erreur lors de l'échange du code")
         
-        # Sauvegarder les données
-        try:
-            save_to_database(token_data)
-            log("✅ Données sauvegardées avec succès", "info", "💾")
-            
-            # Rediriger vers la page d'accueil
-            return redirect('/')
-            
-        except Exception as e:
-            log(f"❌ Erreur lors de la sauvegarde: {str(e)}", "error", "💥")
-            return jsonify({
-                'success': False,
-                'error': 'Erreur lors de la sauvegarde des données'
-            }), 500
-            
+        # Sauvegarder les données dans Supabase
+        save_to_database(token_data)
+        
+        # Retourner une page HTML qui se ferme automatiquement
+        return render_template('close.html', success=True)
+        
     except Exception as e:
-        log(f"❌ Erreur webhook: {str(e)}", "error", "💥")
-        return jsonify({
-            'success': False,
-            'error': 'Erreur serveur'
-        }), 500
+        log(f"❌ Erreur lors du traitement du webhook: {str(e)}", "error", "💥")
+        if debug_mode:
+            log(traceback.format_exc(), "error", "🔍")
+        return render_template('close.html', success=False, message="Une erreur est survenue")
 
 @app.route('/health', methods=['GET'])
 def health_check():
