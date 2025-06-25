@@ -141,25 +141,57 @@ def get_db_connection():
         if conn is not None:
             conn.close()
 
+def get_creator_info(access_token):
+    """Récupérer les informations du créateur TikTok"""
+    try:
+        log("\n🎭 Récupération des informations du créateur...")
+        
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json; charset=UTF-8'
+        }
+        
+        url = 'https://open.tiktokapis.com/v2/post/publish/creator_info/query/'
+        
+        response = requests.post(url, headers=headers)
+        response.raise_for_status()
+        
+        creator_data = response.json()
+        
+        if debug_mode:
+            log(f"   Données créateur: {json.dumps(creator_data, indent=2)}", "debug", "��")
+        
+        # Vérifier si la réponse est OK
+        if creator_data.get('error', {}).get('code') == 'ok':
+            return creator_data
+        else:
+            log(f"❌ Erreur API TikTok: {creator_data.get('error', {}).get('message')}", "error", "💥")
+            return None
+            
+    except Exception as e:
+        log(f"❌ Erreur lors de la récupération des informations créateur: {str(e)}", "error", "💥")
+        if debug_mode:
+            log(traceback.format_exc(), "error", "🔍")
+        return None
+
 def save_to_database(token_data):
-    """Sauvegarder les données du token dans Supabase"""
+    """Sauvegarder les données du token et les informations du créateur dans Supabase"""
     try:
         log("\n🔄 Préparation de l'insertion dans Supabase...")
         
         if debug_mode:
             log(f"   Token data brute: {json.dumps(token_data, indent=2)}", "debug", "🔍")
         
-        log(f"   Token data: access_token={token_data.get('access_token')[:10]}...")
-        log(f"   expires_in={token_data.get('expires_in')}")
-        log(f"   open_id={token_data.get('open_id')}")
+        # Récupérer les informations du créateur
+        creator_info = get_creator_info(token_data.get('access_token'))
         
         # Désactiver les anciens tokens
         supabase.table('tiktok_tokens').update({
             'is_active': False
         }).eq('open_id', token_data.get('open_id')).execute()
         
-        # Insérer le nouveau token
-        result = supabase.table('tiktok_tokens').insert({
+        # Préparer les données à insérer
+        insert_data = {
             'access_token': token_data.get('access_token'),
             'refresh_token': token_data.get('refresh_token'),
             'expires_in': token_data.get('expires_in'),
@@ -169,7 +201,28 @@ def save_to_database(token_data):
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat(),
             'is_active': True
-        }).execute()
+        }
+        
+        # Ajouter les informations du créateur si disponibles
+        if creator_info and creator_info.get('data'):
+            creator_data = creator_info['data']
+            insert_data.update({
+                'creator_avatar_url': creator_data.get('creator_avatar_url'),
+                'creator_username': creator_data.get('creator_username'),
+                'creator_nickname': creator_data.get('creator_nickname'),
+                'privacy_level_options': creator_data.get('privacy_level_options'),
+                'comment_disabled': creator_data.get('comment_disabled'),
+                'duet_disabled': creator_data.get('duet_disabled'),
+                'stitch_disabled': creator_data.get('stitch_disabled'),
+                'max_video_post_duration_sec': creator_data.get('max_video_post_duration_sec')
+            })
+            
+            log(f"👤 Informations créateur récupérées:")
+            log(f"   Username: {creator_data.get('creator_username')}")
+            log(f"   Nickname: {creator_data.get('creator_nickname')}")
+        
+        # Insérer les données
+        result = supabase.table('tiktok_tokens').insert(insert_data).execute()
         
         log("✅ Données insérées dans Supabase avec succès")
         if result.data:
