@@ -98,7 +98,7 @@ TIKTOK_AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
 TIKTOK_API_URL = "https://open.tiktokapis.com/v2/oauth/token/"
 TIKTOK_CLIENT_KEY = os.getenv('TIKTOK_CLIENT_KEY', 'sbawsypybjjzimm3xs')
 TIKTOK_CLIENT_SECRET = os.getenv('TIKTOK_CLIENT_SECRET', 'oVlOlWrR1LvLkhN3tfKPxnosTOoTvc9m')
-TIKTOK_REDIRECT_URI = os.getenv('TIKTOK_REDIRECT_URI', 'https://mikkon8n.app.n8n.cloud/webhook-test/36b971b6-d5a3-4153-a36f-18d4904c40d1')
+TIKTOK_REDIRECT_URI = os.getenv('TIKTOK_REDIRECT_URI', 'https://141.253.120.227:3000/webhook')
 
 # Vérification des variables d'environnement obligatoires
 required_env_vars = {
