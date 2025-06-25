@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --secondary: #C4B5FD;
+            --background: #1A1A2E;
+            --surface: #2A2A3E;
+            --text: #E2E8F0;
+            --text-secondary: #94A3B8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--background), #2D1B69);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .background-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .shape {
+            position: absolute;
+            background: var(--primary);
+            filter: blur(80px);
+            opacity: 0.2;
+            border-radius: 50%;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            left: -150px;
+            animation: float 8s infinite;
+        }
+
+        .shape-2 {
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            right: -200px;
+            background: var(--secondary);
+            animation: float 10s infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(50px, 50px); }
+            50% { transform: translate(0, 100px); }
+            75% { transform: translate(-50px, 50px); }
+        }
+
+        .container {
+            background: rgba(42, 42, 62, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 90%;
+            width: 420px;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo-container {
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .tiktok-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tiktok-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+        }
+
+        .tiktok-button:active {
+            transform: translateY(0);
+        }
+
+        .tiktok-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
+            clip-path: polygon(0 0, 100% 0, 100% 30%, 0 60%);
+            transition: all 0.3s ease;
+        }
+
+        .tiktok-button:hover::after {
+            transform: translateY(100%);
+        }
+
+        .tiktok-logo {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            filter: brightness(0) invert(1);
+        }
+
+        .debug-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .debug-info p {
+            margin: 0.5rem 0;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 2rem;
+                width: 100%;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .subtitle {
+                font-size: 0.875rem;
+            }
+
+            .tiktok-button {
+                padding: 0.75rem 1.5rem;
+                font-size: 0.875rem;
+            }
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            background: rgba(42, 42, 62, 0.9);
+            border-radius: 24px;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--text-secondary);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+
+    <div class="container">
+        <div class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <div class="logo-container">
+            <svg class="logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M34.7359 0H26.3133V32.3704C26.3133 36.3146 23.1078 39.5185 19.1617 39.5185C15.2156 39.5185 12.0101 36.3146 12.0101 32.3704C12.0101 28.4261 15.2156 25.2222 19.1617 25.2222V16.8148C10.5904 16.8148 3.58749 23.8137 3.58749 32.3704C3.58749 40.9271 10.5904 47.9259 19.1617 47.9259C27.733 47.9259 34.7359 40.9271 34.7359 32.3704V16.0741C37.8481 18.4222 41.6544 19.7778 45.7148 19.7778V11.3704C39.4552 11.3704 34.7359 6.65338 34.7359 0Z" fill="url(#paint0_linear)"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="24.6511" y1="0" x2="24.6511" y2="47.9259" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#8B5CF6"/>
+                        <stop offset="1" stop-color="#7C3AED"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <h1>TikTok Login</h1>
+            <p class="subtitle">Connectez-vous avec votre compte TikTok pour continuer</p>
+        </div>
+
+        <button onclick="startOAuth()" class="tiktok-button">
+            <svg class="tiktok-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M34.7359 0H26.3133V32.3704C26.3133 36.3146 23.1078 39.5185 19.1617 39.5185C15.2156 39.5185 12.0101 36.3146 12.0101 32.3704C12.0101 28.4261 15.2156 25.2222 19.1617 25.2222V16.8148C10.5904 16.8148 3.58749 23.8137 3.58749 32.3704C3.58749 40.9271 10.5904 47.9259 19.1617 47.9259C27.733 47.9259 34.7359 40.9271 34.7359 32.3704V16.0741C37.8481 18.4222 41.6544 19.7778 45.7148 19.7778V11.3704C39.4552 11.3704 34.7359 6.65338 34.7359 0Z" fill="currentColor"/>
+            </svg>
+            Se connecter avec TikTok
+        </button>
+
+        {% if debug_mode %}
+        <div class="debug-info">
+            <p>Mode Debug: Activé</p>
+            <p>Redirect URI: {{ redirect_uri }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        async function startOAuth() {
+            const loading = document.querySelector('.loading');
+            loading.classList.add('active');
+            
+            try {
+                const response = await fetch('/oauth');
+                const data = await response.json();
+                
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    console.error('URL de redirection non trouvée dans la réponse');
+                    alert('Erreur lors de la connexion à TikTok. Veuillez réessayer.');
+                    loading.classList.remove('active');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la connexion à TikTok. Veuillez réessayer.');
+                loading.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html> 
