@@ -558,6 +558,31 @@ def get_profile():
             'error': 'Erreur serveur'
         }), 500
 
+@app.route('/logout', methods=['POST'])
+def logout():
+    """Endpoint pour déconnecter l'utilisateur"""
+    try:
+        log("\n🚪 Requête de déconnexion reçue")
+        
+        # Désactiver tous les tokens actifs
+        result = supabase.table('tiktok_tokens') \
+            .update({'is_active': False}) \
+            .eq('is_active', True) \
+            .execute()
+        
+        log("✅ Déconnexion réussie", "info", "🔓")
+        return jsonify({
+            'success': True,
+            'message': 'Déconnecté avec succès'
+        })
+        
+    except Exception as e:
+        log(f"❌ Erreur lors de la déconnexion: {str(e)}", "error", "💥")
+        return jsonify({
+            'success': False,
+            'error': 'Erreur serveur'
+        }), 500
+
 if __name__ == '__main__':
     log("\n🚀 Démarrage de l'API TikTok Webhook")
     port = int(os.getenv('PORT', 5000))
