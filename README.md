@@ -1,11 +1,13 @@
 # TikTok API Webhook
 
-API Flask pour gérer l'authentification TikTok avec stockage des tokens dans Supabase.
+API Flask pour gérer l'authentification TikTok avec stockage des tokens et informations du créateur dans Supabase.
 
 ## Fonctionnalités
 
 - Authentification TikTok Login Kit Web
 - Stockage sécurisé des tokens dans Supabase
+- Récupération des informations du créateur TikTok
+- Support HTTPS avec certificat auto-signé (développement)
 - Protection CSRF
 - Mode debug avec logs détaillés
 - Interface utilisateur moderne pour la connexion
@@ -15,6 +17,7 @@ API Flask pour gérer l'authentification TikTok avec stockage des tokens dans Su
 - Python 3.8+
 - Un compte Supabase
 - Un compte développeur TikTok
+- OpenSSL (pour le certificat HTTPS)
 
 ## Installation
 
@@ -58,13 +61,22 @@ TIKTOK_REDIRECT_URI=votre_redirect_uri
 PORT=5000
 ```
 
+6. Générer le certificat SSL pour le développement :
+```bash
+python generate_cert.py
+```
+
 ## Structure du projet
 
 ```
 TiktokApi/
 ├── app.py              # Application principale Flask
+├── generate_cert.py    # Générateur de certificat SSL
 ├── env_example.txt     # Exemple de configuration
 ├── requirements.txt    # Dépendances Python
+├── certs/             # Certificats SSL
+│   ├── cert.pem       # Certificat public
+│   └── key.pem        # Clé privée
 ├── templates/          # Templates HTML
 │   └── index.html     # Page de connexion
 └── logs/              # Logs de l'application
@@ -77,10 +89,12 @@ TiktokApi/
 python app.py
 ```
 
-2. Accéder à l'interface web :
+2. Accéder à l'interface web (HTTPS) :
 ```
-http://localhost:5000
+https://localhost:5000
 ```
+
+Note : Comme nous utilisons un certificat auto-signé pour le développement, votre navigateur affichera un avertissement de sécurité. C'est normal, vous pouvez continuer en ajoutant une exception.
 
 3. Cliquer sur le bouton de connexion TikTok pour démarrer le flux d'authentification
 
@@ -91,6 +105,16 @@ http://localhost:5000
 - `GET/POST /webhook` : Endpoint pour recevoir le code d'autorisation
 - `GET /health` : Vérification de l'état de l'API
 
+## Informations stockées
+
+Pour chaque utilisateur connecté, nous stockons :
+- Token d'accès et de rafraîchissement
+- URL de l'avatar du créateur
+- Nom d'utilisateur et surnom
+- Options de confidentialité
+- États des fonctionnalités (commentaires, duets, stitches)
+- Durée maximale des vidéos autorisée
+
 ## Logs
 
 Les logs sont stockés dans le dossier `logs/` avec rotation automatique des fichiers.
@@ -98,6 +122,7 @@ En mode debug, des logs détaillés sont disponibles dans la console et les fich
 
 ## Sécurité
 
+- Support HTTPS pour le développement
 - Protection CSRF sur le flux d'authentification
 - Stockage sécurisé des tokens dans Supabase
 - Gestion des tokens expirés
