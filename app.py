@@ -313,11 +313,11 @@ def oauth():
         # Générer un état aléatoire pour la sécurité
         state = secrets.token_urlsafe(32)
         
-        # Construire l'URL d'authentification TikTok avec les scopes corrects
+        # Construire l'URL d'authentification TikTok
         auth_params = {
             'client_key': TIKTOK_CLIENT_KEY,
             'response_type': 'code',
-            'scope': 'user.info.basic,user.info.profile,user.info.stats,video.list',
+            'scope': 'user.info.basic',
             'redirect_uri': TIKTOK_REDIRECT_URI,
             'state': state
         }
@@ -327,14 +327,14 @@ def oauth():
         if debug_mode:
             log(f"   URL d'authentification: {auth_url}", "debug", "🔍")
         
-        # Rediriger directement vers TikTok
-        return redirect(auth_url)
+        # Retourner directement l'URL pour la popup
+        return jsonify({'redirect_url': auth_url})
         
     except Exception as e:
         log(f"❌ Erreur lors de la création de l'URL d'authentification: {str(e)}", "error", "💥")
         if debug_mode:
             log(traceback.format_exc(), "error", "🔍")
-        return render_template('close.html', success=False, message="Erreur lors de l'authentification")
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
