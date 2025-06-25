@@ -452,4 +452,13 @@ if __name__ == '__main__':
     
     log("\n⏳ Démarrage du serveur...")
     
-    app.run(host='0.0.0.0', port=port, debug=debug_mode) 
+    # Configuration SSL
+    ssl_context = ('certs/cert.pem', 'certs/key.pem')
+    
+    # Démarrage du serveur en mode HTTPS
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        ssl_context=ssl_context,
+        debug=debug_mode
+    ) 
