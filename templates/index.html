@@ -36,7 +36,9 @@
 
         body {
             font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--background);
+            background: linear-gradient(135deg, #000000, #1a1a1a, #000B1F, #001F3F);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
             color: var(--text);
             min-height: 100vh;
             min-height: 100dvh;
@@ -47,6 +49,27 @@
             padding: var(--spacing-sm);
             line-height: 1.47059;
             -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Effet de brillance subtil */
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 80%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50% }
+            50% { background-position: 100% 50% }
+            100% { background-position: 0% 50% }
         }
 
         .container {
@@ -260,11 +283,18 @@
 
     <script>
         async function startOAuth() {
-            const loading = document.querySelector('.loading');
-            loading.classList.add('active');
-            
             try {
-                const response = await fetch('https://141.253.120.227:3000/oauth');
+                const response = await fetch('https://141.253.120.227:3000/oauth', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 
                 if (data.redirect_url) {
@@ -274,16 +304,25 @@
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                alert('Erreur lors de la connexion à TikTok');
-                loading.classList.remove('active');
+                alert('Erreur lors de la connexion à TikTok. Veuillez réessayer.');
             }
         }
 
         async function checkAndDisplayProfile() {
             try {
-                const response = await fetch('https://141.253.120.227:3000/user/profile');
-                const data = await response.json();
+                const response = await fetch('https://141.253.120.227:3000/user/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
                 if (data.success) {
                     document.getElementById('login-section').style.display = 'none';
                     
@@ -297,15 +336,6 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('code')) {
-                setTimeout(checkAndDisplayProfile, 1000);
-            } else {
-                checkAndDisplayProfile();
-            }
-        });
-
         async function logout() {
             try {
                 const response = await fetch('https://141.253.120.227:3000/logout', {
@@ -315,17 +345,29 @@
                     }
                 });
 
-                if (response.ok) {
-                    // Recharger la page après la déconnexion
-                    window.location.reload();
-                } else {
-                    throw new Error('Erreur lors de la déconnexion');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                // Recharger la page après la déconnexion
+                window.location.reload();
             } catch (error) {
                 console.error('Erreur:', error);
                 alert('Erreur lors de la déconnexion');
             }
         }
+
+        // Vérifier le profil au chargement et après l'authentification
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('code')) {
+                // Si on revient de l'auth TikTok, vérifier le profil après un court délai
+                setTimeout(checkAndDisplayProfile, 1000);
+            } else {
+                // Sinon, vérifier directement
+                checkAndDisplayProfile();
+            }
+        });
     </script>
 </body>
 </html> 
