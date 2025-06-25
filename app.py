@@ -313,11 +313,11 @@ def oauth():
         # Générer un état aléatoire pour la sécurité
         state = secrets.token_urlsafe(32)
         
-        # Construire l'URL d'authentification TikTok
+        # Construire l'URL d'authentification TikTok avec les scopes corrects
         auth_params = {
             'client_key': TIKTOK_CLIENT_KEY,
             'response_type': 'code',
-            'scope': 'user.info.basic,video.list',
+            'scope': 'user.info.basic,user.info.profile,user.info.stats,video.list',
             'redirect_uri': TIKTOK_REDIRECT_URI,
             'state': state
         }
