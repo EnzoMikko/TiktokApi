@@ -355,9 +355,17 @@ def webhook():
         
         # Sauvegarder les données dans Supabase
         save_to_database(token_data)
+
+        # Détecter si la requête vient d'un mobile (User-Agent)
+        user_agent = request.headers.get('User-Agent', '').lower()
+        is_mobile = any(device in user_agent for device in ['iphone', 'ipad', 'android', 'mobile'])
         
-        # Retourner une page HTML qui se ferme automatiquement
-        return render_template('close.html', success=True)
+        if is_mobile:
+            # Sur mobile, rediriger vers la page principale
+            return redirect('/?code=success')
+        else:
+            # Sur desktop, afficher la page de confirmation qui se fermera
+            return render_template('close.html', success=True)
         
     except Exception as e:
         log(f"❌ Erreur lors du traitement du webhook: {str(e)}", "error", "💥")

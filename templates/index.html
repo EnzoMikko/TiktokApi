@@ -325,33 +325,41 @@
     </div>
 
     <script>
-        function openTikTokAuth() {
-            // Dimensions de la popup
-            const width = 500;
-            const height = 700;
-            const left = (window.innerWidth - width) / 2;
-            const top = (window.innerHeight - height) / 2;
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") 
+                || (navigator.userAgent.indexOf('IEMobile') !== -1)
+                || /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+        }
 
+        function openTikTokAuth() {
             // Récupérer d'abord l'URL de redirection
             fetch('/oauth')
                 .then(response => response.json())
                 .then(data => {
                     if (data.redirect_url) {
-                        // Ouvrir la popup avec l'URL de redirection
-                        const popup = window.open(
-                            data.redirect_url,
-                            'TikTok Auth',
-                            `width=${width},height=${height},left=${left},top=${top},popup=yes`
-                        );
+                        if (isMobileDevice()) {
+                            // Sur mobile, faire une redirection directe
+                            window.location.href = data.redirect_url;
+                        } else {
+                            // Sur desktop, utiliser une popup
+                            const width = 500;
+                            const height = 700;
+                            const left = (window.innerWidth - width) / 2;
+                            const top = (window.innerHeight - height) / 2;
 
-                        // Vérifier périodiquement si la popup est fermée
-                        const checkPopup = setInterval(() => {
-                            if (popup.closed) {
-                                clearInterval(checkPopup);
-                                // Rafraîchir les informations du profil
-                                checkAuthStatus();
-                            }
-                        }, 500);
+                            const popup = window.open(
+                                data.redirect_url,
+                                'TikTok Auth',
+                                `width=${width},height=${height},left=${left},top=${top},popup=yes`
+                            );
+
+                            const checkPopup = setInterval(() => {
+                                if (popup.closed) {
+                                    clearInterval(checkPopup);
+                                    checkAuthStatus();
+                                }
+                            }, 500);
+                        }
                     } else {
                         console.error('URL de redirection non trouvée');
                     }
@@ -376,8 +384,17 @@
                 .catch(error => console.error('Error:', error));
         }
 
-        // Vérifier le statut d'authentification au chargement
-        document.addEventListener('DOMContentLoaded', checkAuthStatus);
+        // Vérifier le statut d'authentification au chargement et après redirection mobile
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+            
+            // Si on revient d'une redirection mobile (présence du paramètre code)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('code')) {
+                // Nettoyer l'URL
+                window.history.replaceState({}, document.title, '/');
+            }
+        });
 
         // Remplacer l'ancien onclick par la nouvelle fonction
         document.querySelector('.tiktok-button').onclick = openTikTokAuth;
