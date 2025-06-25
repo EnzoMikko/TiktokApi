@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, request, jsonify, make_response, render_template
+from flask import Flask, request, jsonify, make_response, render_template, redirect
 from flask_cors import CORS
 import requests
 import os
@@ -355,94 +355,51 @@ def oauth():
 
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
-    """Endpoint webhook pour recevoir le code d'autorisation"""
-    log("\n🔄 Nouvelle requête webhook reçue")
-    log(f"   Méthode: {request.method}")
-    
+    """Endpoint pour gérer le retour de l'authentification TikTok"""
     try:
-        if debug_mode:
-            log("   Headers de la requête:", "debug", "🔍")
-            log(f"   {json.dumps(dict(request.headers), indent=2)}", "debug", "🔍")
-            log("   Cookies:", "debug", "🔍")
-            log(f"   {json.dumps(dict(request.cookies), indent=2)}", "debug", "🔍")
+        log("\n🔄 Webhook TikTok reçu")
         
-        if request.method == 'GET':
-            log("   Type: GET - Recherche du code dans les paramètres")
-            if debug_mode:
-                log(f"   Paramètres: {json.dumps(dict(request.args), indent=2)}", "debug", "🔍")
-            
-            code = request.args.get('code')
-            state = request.args.get('state')
-            
-            # Vérifier l'état CSRF
-            stored_state = request.cookies.get('csrf_state')
-            if not stored_state or stored_state != state:
-                log("❌ État CSRF invalide", "error", "🔒")
-                if debug_mode:
-                    log(f"   État reçu: {state}", "debug", "🔍")
-                    log(f"   État stocké: {stored_state}", "debug", "🔍")
-                return jsonify({'error': 'État CSRF invalide'}), 400
-                
-            if not code:
-                log("❌ Code manquant dans les paramètres GET", "error", "❌")
-                return jsonify({'error': 'Code d\'autorisation manquant'}), 400
-        else:
-            log("   Type: POST - Recherche du code dans le body")
-            data = request.get_json()
-            
-            if debug_mode:
-                log(f"   Body reçu: {json.dumps(data, indent=2)}", "debug", "🔍")
-            
-            if not data:
-                log("❌ Body JSON manquant", "error", "❌")
-                return jsonify({'error': 'Données JSON manquantes'}), 400
-            
-            code = data.get('code')
-            if not code:
-                log("❌ Code manquant dans le body", "error", "❌")
-                return jsonify({'error': 'Code d\'autorisation manquant dans le body'}), 400
+        # Récupérer le code d'autorisation
+        code = request.args.get('code')
         
-        log(f"✅ Code extrait: {code[:20]}...")
+        if not code:
+            log("❌ Code d'autorisation manquant", "error", "⚠️")
+            return jsonify({
+                'success': False,
+                'error': 'Code d\'autorisation manquant'
+            }), 400
         
         # Appeler l'API TikTok
         token_data = call_tiktok_api(code)
         
-        if token_data:
-            # Sauvegarder dans Supabase
-            if save_to_database(token_data):
-                # Supprimer le cookie CSRF après utilisation
-                response = jsonify({
-                    'success': True,
-                    'message': 'Token obtenu et sauvegardé avec succès',
-                    'data': {
-                        'access_token': token_data.get('access_token', '')[:20] + '...',
-                        'expires_in': token_data.get('expires_in'),
-                        'open_id': token_data.get('open_id')
-                    }
-                })
-                response.delete_cookie('csrf_state')
-                log("🎉 Opération réussie - Token sauvegardé")
-                return response, 200
-            else:
-                log("⚠️ Échec sauvegarde - Envoi réponse 500", "error", "💥")
-                return jsonify({
-                    'success': False,
-                    'message': 'Token obtenu mais erreur lors de la sauvegarde'
-                }), 500
-        else:
-            log("⚠️ Échec API TikTok - Envoi réponse 500", "error", "💥")
+        if not token_data:
+            log("❌ Échec de l'appel à l'API TikTok", "error", "💥")
             return jsonify({
                 'success': False,
-                'message': 'Erreur lors de l\'obtention du token'
+                'error': 'Échec de l\'authentification TikTok'
+            }), 500
+        
+        # Sauvegarder les données
+        try:
+            save_to_database(token_data)
+            log("✅ Données sauvegardées avec succès", "info", "💾")
+            
+            # Rediriger vers la page d'accueil
+            return redirect('/')
+            
+        except Exception as e:
+            log(f"❌ Erreur lors de la sauvegarde: {str(e)}", "error", "💥")
+            return jsonify({
+                'success': False,
+                'error': 'Erreur lors de la sauvegarde des données'
             }), 500
             
     except Exception as e:
-        log(f"❌ ERREUR WEBHOOK: {str(e)}", "error", "💥")
-        if debug_mode:
-            log("   Traceback complet:", "error", "🔍")
-            import traceback
-            log(traceback.format_exc(), "error", "🔍")
-        return jsonify({'error': str(e)}), 500
+        log(f"❌ Erreur webhook: {str(e)}", "error", "💥")
+        return jsonify({
+            'success': False,
+            'error': 'Erreur serveur'
+        }), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():

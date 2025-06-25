@@ -1,451 +1,198 @@
-# TikTok API Webhook
+# TikTok API Integration
 
-API Flask pour gérer l'authentification TikTok avec stockage des tokens et informations du créateur dans Supabase.
+Une intégration élégante de l'API TikTok avec authentification OAuth et interface utilisateur moderne.
 
 ## Fonctionnalités
 
-- Authentification TikTok Login Kit Web
-- Stockage sécurisé des tokens dans Supabase
-- Récupération des informations du créateur TikTok
-- Support HTTPS avec certificat auto-signé (développement)
-- Protection CSRF
-- Mode debug avec logs détaillés
-- Interface utilisateur moderne pour la connexion
+- 🔐 Authentification OAuth TikTok
+- 👤 Affichage du profil utilisateur
+- 🎨 Interface utilisateur moderne style Apple
+- 🔄 Gestion automatique des tokens
+- 📱 Design responsive
+- 🔒 Sécurité renforcée
 
-## Configuration requise
+## Configuration Technique
 
-- Python 3.8+
-- Un compte Supabase
-- Un compte développeur TikTok
-- OpenSSL (pour le certificat HTTPS)
+### Prérequis
 
-## Installation
-
-1. Cloner le repository :
-```bash
-git clone <votre-repo>
-cd TiktokApi
-```
-
-2. Créer un environnement virtuel :
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
-```
-
-3. Installer les dépendances :
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Copier le fichier d'exemple d'environnement :
-```bash
-cp env_example.txt .env
-```
+### Variables d'Environnement
 
-5. Configurer les variables d'environnement dans `.env` :
-```
-DEBUG=True
+Créez un fichier `.env` avec :
 
-# Supabase Configuration
-SUPABASE_URL=votre_url_supabase
-SUPABASE_KEY=votre_cle_supabase
-
-# TikTok API Configuration
+```env
 TIKTOK_CLIENT_KEY=votre_client_key
 TIKTOK_CLIENT_SECRET=votre_client_secret
-TIKTOK_REDIRECT_URI=votre_redirect_uri
-
-# Server Configuration
-PORT=5000
+TIKTOK_REDIRECT_URI=https://votre-domaine.com/webhook
+SUPABASE_URL=votre_url_supabase
+SUPABASE_KEY=votre_key_supabase
+DEBUG=False
 ```
 
-6. Générer le certificat SSL pour le développement :
-```bash
-python generate_cert.py
+### Base de Données
+
+La table Supabase `tiktok_tokens` doit contenir :
+
+```sql
+- access_token (text)
+- refresh_token (text)
+- expires_in (integer)
+- open_id (text)
+- creator_nickname (text)
+- creator_avatar_url (text)
+- is_active (boolean)
+- created_at (timestamp)
 ```
 
-## Structure du projet
+## Routes API
 
-```
-TiktokApi/
-├── app.py              # Application principale Flask
-├── generate_cert.py    # Générateur de certificat SSL
-├── env_example.txt     # Exemple de configuration
-├── requirements.txt    # Dépendances Python
-├── certs/             # Certificats SSL
-│   ├── cert.pem       # Certificat public
-│   └── key.pem        # Clé privée
-├── templates/          # Templates HTML
-│   └── index.html     # Page de connexion
-└── logs/              # Logs de l'application
-```
+### `/oauth` (GET)
+- Initialise le processus d'authentification TikTok
+- Retourne l'URL de redirection TikTok
 
-## Utilisation
+### `/webhook` (GET)
+- Gère le retour d'authentification TikTok
+- Sauvegarde les informations du créateur
+- Redirige vers la page d'accueil
 
-1. Démarrer l'application :
-```bash
-python app.py
-```
-
-2. Accéder à l'interface web (HTTPS) :
-```
-https://localhost:5000
-```
-
-Note : Comme nous utilisons un certificat auto-signé pour le développement, votre navigateur affichera un avertissement de sécurité. C'est normal, vous pouvez continuer en ajoutant une exception.
-
-3. Cliquer sur le bouton de connexion TikTok pour démarrer le flux d'authentification
-
-## Endpoints API
-
-- `GET /` : Page d'accueil avec bouton de connexion
-- `GET /oauth` : Démarrage du flux d'authentification TikTok
-- `GET/POST /webhook` : Endpoint pour recevoir le code d'autorisation
-- `GET /health` : Vérification de l'état de l'API
-
-## Informations stockées
-
-Pour chaque utilisateur connecté, nous stockons :
-- Token d'accès et de rafraîchissement
-- URL de l'avatar du créateur
-- Nom d'utilisateur et surnom
-- Options de confidentialité
-- États des fonctionnalités (commentaires, duets, stitches)
-- Durée maximale des vidéos autorisée
-
-## Logs
-
-Les logs sont stockés dans le dossier `logs/` avec rotation automatique des fichiers.
-En mode debug, des logs détaillés sont disponibles dans la console et les fichiers.
-
-## Sécurité
-
-- Support HTTPS pour le développement
-- Protection CSRF sur le flux d'authentification
-- Stockage sécurisé des tokens dans Supabase
-- Gestion des tokens expirés
-- Validation des données entrantes
-
-## Support
-
-Pour toute question ou problème, veuillez ouvrir une issue sur le repository.
-
-## Documentation détaillée des endpoints
-
-### 1. Page d'accueil (`GET /`)
-```http
-GET / HTTP/1.1
-Host: localhost:5000
-```
-**Réponse** : Page HTML avec le bouton de connexion TikTok
-
-### 2. Démarrage OAuth (`GET /oauth`)
-```http
-GET /oauth HTTP/1.1
-Host: localhost:5000
-```
-
-**Réponse** : Redirection vers TikTok
-```http
-HTTP/1.1 302 Found
-Location: https://www.tiktok.com/v2/auth/authorize/?client_key=YOUR_CLIENT_KEY&response_type=code&scope=user.info.basic,video.list&redirect_uri=YOUR_REDIRECT_URI&state=RANDOM_STATE
-```
-
-### 3. Webhook (`GET /webhook`)
-#### Réception du code d'autorisation
-```http
-GET /webhook?code=AUTH_CODE&state=RANDOM_STATE HTTP/1.1
-Host: localhost:5000
-```
-
-#### Échange du code contre un token (Appel à l'API TikTok)
-**Requête vers TikTok**
-```http
-POST https://open.tiktokapis.com/v2/oauth/token/
-Content-Type: application/x-www-form-urlencoded
-
-client_key=YOUR_CLIENT_KEY
-&client_secret=YOUR_CLIENT_SECRET
-&code=AUTH_CODE
-&grant_type=authorization_code
-```
-
-**Réponse de TikTok**
+### `/user/profile` (GET)
+- Retourne les informations du profil utilisateur
+- Format de réponse :
 ```json
 {
-    "access_token": "act.xxx...",
-    "refresh_token": "rft.xxx...",
-    "open_id": "USER_OPEN_ID",
-    "expires_in": 86400,
-    "scope": "user.info.basic,video.list"
+    "success": true,
+    "nickname": "nom_utilisateur",
+    "avatar_url": "url_avatar"
 }
 ```
 
-#### Récupération des informations du créateur (Appel à l'API TikTok)
-**Requête vers TikTok**
-```http
-POST https://open.tiktokapis.com/v2/post/publish/creator_info/query/
-Content-Type: application/json
-Authorization: Bearer act.xxx...
-```
+### `/logout` (POST)
+- Déconnecte l'utilisateur
+- Désactive le token actif
 
-**Réponse de TikTok**
-```json
-{
-   "data": {
-      "creator_avatar_url": "https://...",
-      "creator_username": "username",
-      "creator_nickname": "Nickname",
-      "privacy_level_options": ["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "SELF_ONLY"],
-      "comment_disabled": false,
-      "duet_disabled": false,
-      "stitch_disabled": true,
-      "max_video_post_duration_sec": 300
-   },
-   "error": {
-      "code": "ok",
-      "message": "",
-      "log_id": "202210112248442CB9319E1FB30C1073F3"
-   }
-}
-```
+## Interface Utilisateur
 
-**Réponse finale du webhook**
-```json
-{
-    "status": "success",
-    "message": "Token stored successfully"
-}
-```
+### Design Moderne
+- Dégradé de fond animé
+- Effet glassmorphism
+- Animations fluides
+- Police système optimisée
+- Support du mode sombre
 
-### 4. Vérification de santé (`GET /health`)
-```http
-GET /health HTTP/1.1
-Host: localhost:5000
-```
+### Composants
 
-**Réponse**
-```json
-{
-    "status": "healthy",
-    "timestamp": "2024-03-25T10:30:00Z"
-}
-```
-
-## Structure des données Supabase
-
-### Table: tiktok_tokens
-Voici la structure des données stockées dans Supabase après une authentification réussie :
-
-```json
-{
-    "id": "uuid",
-    "access_token": "act.xxx...",
-    "refresh_token": "rft.xxx...",
-    "expires_in": 86400,
-    "open_id": "USER_OPEN_ID",
-    "union_id": "UNION_ID",
-    "scope": "user.info.basic,video.list",
-    "creator_avatar_url": "https://...",
-    "creator_username": "username",
-    "creator_nickname": "Nickname",
-    "privacy_level_options": ["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "SELF_ONLY"],
-    "comment_disabled": false,
-    "duet_disabled": false,
-    "stitch_disabled": true,
-    "max_video_post_duration_sec": 300,
-    "created_at": "2024-03-25T10:30:00Z",
-    "updated_at": "2024-03-25T10:30:00Z",
-    "is_active": true
-}
-```
-
-## Gestion des erreurs
-
-### 1. Erreur d'authentification TikTok
-```json
-{
-    "error": {
-        "code": "auth_error",
-        "message": "Invalid authorization code"
-    }
-}
-```
-
-### 2. Erreur de token expiré
-```json
-{
-    "error": {
-        "code": "token_expired",
-        "message": "Access token has expired"
-    }
-}
-```
-
-### 3. Erreur de base de données
-```json
-{
-    "error": {
-        "code": "database_error",
-        "message": "Failed to store token in database"
-    }
-}
-```
-
-## Implémentation Frontend
-
-### Structure HTML Essentielle
+#### Bouton de Connexion
 ```html
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Login</title>
-    <!-- Police Inter de Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Styles CSS ici */
-    </style>
-</head>
-<body>
-    <!-- Formes d'arrière-plan animées -->
-    <div class="background-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-    </div>
-
-    <!-- Conteneur principal -->
-    <div class="container">
-        <!-- Logo et titre -->
-        <div class="logo-container">
-            <h1>TikTok Login</h1>
-            <p class="subtitle">Connectez-vous avec votre compte TikTok</p>
-        </div>
-
-        <!-- Bouton de connexion -->
-        <button onclick="startOAuth()" class="tiktok-button">
-            Se connecter avec TikTok
-        </button>
-
-        <!-- Information de debug (optionnel) -->
-        {% if debug_mode %}
-        <div class="debug-info">
-            <p>Mode Debug: Activé</p>
-            <p>Redirect URI: {{ redirect_uri }}</p>
-        </div>
-        {% endif %}
-    </div>
-</body>
-</html>
+<button class="tiktok-button">
+    <svg><!-- Icon TikTok --></svg>
+    Se connecter
+</button>
 ```
 
-### Styles CSS Essentiels
+#### Section Profil
+```html
+<div class="profile-container">
+    <img class="profile-avatar" src="avatar_url">
+    <div class="profile-info">
+        <div class="profile-nickname">Nom d'utilisateur</div>
+        <div class="profile-status">Compte connecté</div>
+    </div>
+</div>
+```
+
+### Styles CSS Principaux
+
 ```css
 :root {
-    --primary: #8B5CF6;
-    --primary-dark: #7C3AED;
-    --background: #1A1A2E;
-    --text: #E2E8F0;
-    --text-secondary: #94A3B8;
+    --background: #000000;
+    --text: #FFFFFF;
+    --text-secondary: #86868B;
 }
 
 body {
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, var(--background), #2D1B69);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.container {
-    background: rgba(42, 42, 62, 0.7);
-    backdrop-filter: blur(20px);
-    padding: 3rem;
-    border-radius: 24px;
-    text-align: center;
-    max-width: 420px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #000000, #1a1a1a, #000B1F, #001F3F);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
 }
 
 .tiktok-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.875rem 2rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    border: none;
-    border-radius: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    width: 100%;
-}
-
-/* Styles pour l'effet glassmorphism */
-.background-shapes {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 0;
-}
-
-.shape {
-    position: absolute;
-    background: var(--primary);
-    filter: blur(80px);
-    opacity: 0.2;
-    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 980px;
 }
 ```
 
-### JavaScript Minimal
-```javascript
-async function startOAuth() {
-    try {
-        const response = await fetch('https://141.253.120.227:3000/oauth');
-        const data = await response.json();
-        
-        if (data.redirect_url) {
-            window.location.href = data.redirect_url;
-        } else {
-            throw new Error('URL de redirection non trouvée');
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-        alert('Erreur de connexion TikTok');
-    }
+## Flux d'Authentification
+
+1. L'utilisateur clique sur "Se connecter"
+2. Redirection vers l'authentification TikTok
+3. TikTok redirige vers `/webhook` avec le code
+4. Le backend traite l'authentification et sauvegarde les données
+5. Redirection automatique vers la page d'accueil
+6. Affichage du profil utilisateur
+
+## Sécurité
+
+- Tokens stockés de manière sécurisée
+- Gestion automatique des expirations
+- Protection CSRF
+- Headers sécurisés
+- HTTPS obligatoire
+
+## Personnalisation
+
+### Couleurs
+Modifiez les variables CSS dans `:root` :
+```css
+:root {
+    --background: votre_couleur;
+    --text: votre_couleur;
+    --text-secondary: votre_couleur;
 }
 ```
 
-### Points Clés de l'Implémentation
+### Animations
+Ajustez les durées d'animation :
+```css
+.profile-container {
+    animation: fadeIn 0.8s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+```
 
-1. **Structure de Base**
-   - Utilisation de la police Inter de Google Fonts
-   - Conteneur principal avec effet glassmorphism
-   - Formes d'arrière-plan animées pour un effet dynamique
+## Support des Appareils
 
-2. **Design Moderne**
-   - Interface sombre avec effet de flou
-   - Dégradés et effets de survol
-   - Bouton de connexion stylisé
-   - Responsive design
+- 📱 Mobile (>320px)
+- 💻 Tablette (>768px)
+- 🖥️ Desktop (>1024px)
+- Support des préférences de mouvement réduites
+- Support du mode sombre système
 
-3. **Fonctionnalités**
-   - Bouton de connexion TikTok
-   - Mode debug conditionnel
-   - Gestion des erreurs de base
+## Développement
 
-4. **Sécurité**
-   - Viewport sécurisé
-   - Gestion asynchrone de l'OAuth
-   - Support pour le mode debug
+```bash
+# Installation
+pip install -r requirements.txt
+
+# Générer les certificats SSL
+python generate_cert.py
+
+# Démarrer le serveur
+python start.py
+```
+
+## Logs
+
+Les logs sont stockés dans `/logs/tiktok_api.log` avec rotation automatique.
+
+## Contribution
+
+1. Fork le projet
+2. Créez votre branche (`git checkout -b feature/AmazingFeature`)
+3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
 ``` 
