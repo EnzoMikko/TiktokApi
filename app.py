@@ -9,6 +9,7 @@ from datetime import datetime
 import secrets
 import logging
 import sys
+import traceback
 from logging.handlers import RotatingFileHandler
 from supabase.client import create_client, Client
 from contextlib import contextmanager
@@ -159,7 +160,7 @@ def get_creator_info(access_token):
         creator_data = response.json()
         
         if debug_mode:
-            log(f"   Données créateur: {json.dumps(creator_data, indent=2)}", "debug", "��")
+            log(f"   Données créateur: {json.dumps(creator_data, indent=2)}", "debug", "🔍")
         
         # Vérifier si la réponse est OK
         if creator_data.get('error', {}).get('code') == 'ok':
@@ -490,6 +491,79 @@ def home():
     return render_template('index.html', 
                          debug_mode=debug_mode,
                          redirect_uri=TIKTOK_REDIRECT_URI)
+
+def get_user_profile(access_token):
+    """Récupérer les informations du profil utilisateur TikTok"""
+    try:
+        log("\n👤 Récupération du profil utilisateur...")
+        
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = 'https://open.tiktokapis.com/v2/user/info/'
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        
+        user_data = response.json()
+        
+        if debug_mode:
+            log(f"   Données utilisateur: {json.dumps(user_data, indent=2)}", "debug", "🔍")
+        
+        return user_data.get('data', {})
+    except Exception as e:
+        log(f"❌ Erreur lors de la récupération du profil: {str(e)}", "error", "💥")
+        if debug_mode:
+            log(traceback.format_exc(), "error", "🔍")
+        return None
+
+@app.route('/user/profile', methods=['GET'])
+def get_profile():
+    """Endpoint pour récupérer le profil de l'utilisateur connecté"""
+    try:
+        log("\n🎯 Requête de profil utilisateur reçue")
+        
+        # Récupérer le dernier token actif
+        result = supabase.table('tiktok_tokens').select('*').eq('is_active', True).order('created_at', desc=True).limit(1).execute()
+        
+        if not result.data:
+            log("❌ Aucun token actif trouvé", "warning", "⚠️")
+            return jsonify({
+                'success': False,
+                'error': 'Non authentifié'
+            }), 401
+        
+        token_data = result.data[0]
+        access_token = token_data.get('access_token')
+        
+        # Récupérer les informations du profil
+        user_profile = get_user_profile(access_token)
+        
+        if not user_profile:
+            return jsonify({
+                'success': False,
+                'error': 'Erreur lors de la récupération du profil'
+            }), 500
+        
+        # Construire la réponse
+        response_data = {
+            'success': True,
+            'nickname': user_profile.get('display_name', ''),
+            'avatar_url': user_profile.get('avatar_url', ''),
+            'bio_description': user_profile.get('bio_description', ''),
+            'profile_deep_link': user_profile.get('profile_deep_link', '')
+        }
+        
+        log("✅ Profil utilisateur récupéré avec succès", "info", "🎉")
+        return jsonify(response_data)
+        
+    except Exception as e:
+        log(f"❌ Erreur lors de la récupération du profil: {str(e)}", "error", "💥")
+        return jsonify({
+            'success': False,
+            'error': 'Erreur serveur'
+        }), 500
 
 if __name__ == '__main__':
     log("\n🚀 Démarrage de l'API TikTok Webhook")

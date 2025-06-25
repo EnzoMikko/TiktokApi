@@ -232,6 +232,89 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        .profile-container {
+            display: none;
+            margin-top: 2rem;
+            padding: 2rem;
+            background: rgba(42, 42, 62, 0.8);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .profile-container.active {
+            display: block;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+            object-fit: cover;
+        }
+
+        .profile-info {
+            text-align: left;
+        }
+
+        .profile-nickname {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .profile-status {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            fill: #10B981;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .success-message {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            color: #10B981;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-info {
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -245,26 +328,34 @@
             <div class="spinner"></div>
         </div>
 
-        <div class="logo-container">
-            <svg class="logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M34.7359 0H26.3133V32.3704C26.3133 36.3146 23.1078 39.5185 19.1617 39.5185C15.2156 39.5185 12.0101 36.3146 12.0101 32.3704C12.0101 28.4261 15.2156 25.2222 19.1617 25.2222V16.8148C10.5904 16.8148 3.58749 23.8137 3.58749 32.3704C3.58749 40.9271 10.5904 47.9259 19.1617 47.9259C27.733 47.9259 34.7359 40.9271 34.7359 32.3704V16.0741C37.8481 18.4222 41.6544 19.7778 45.7148 19.7778V11.3704C39.4552 11.3704 34.7359 6.65338 34.7359 0Z" fill="url(#paint0_linear)"/>
-                <defs>
-                    <linearGradient id="paint0_linear" x1="24.6511" y1="0" x2="24.6511" y2="47.9259" gradientUnits="userSpaceOnUse">
-                        <stop stop-color="#8B5CF6"/>
-                        <stop offset="1" stop-color="#7C3AED"/>
-                    </linearGradient>
-                </defs>
-            </svg>
-            <h1>TikTok Login</h1>
-            <p class="subtitle">Connectez-vous avec votre compte TikTok pour continuer</p>
+        <div id="login-section">
+            <div class="logo-container">
+                <h1>TikTok Login</h1>
+                <p class="subtitle">Connectez-vous avec votre compte TikTok</p>
+            </div>
+
+            <button onclick="startOAuth()" class="tiktok-button">
+                Se connecter avec TikTok
+            </button>
         </div>
 
-        <button onclick="startOAuth()" class="tiktok-button">
-            <svg class="tiktok-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M34.7359 0H26.3133V32.3704C26.3133 36.3146 23.1078 39.5185 19.1617 39.5185C15.2156 39.5185 12.0101 36.3146 12.0101 32.3704C12.0101 28.4261 15.2156 25.2222 19.1617 25.2222V16.8148C10.5904 16.8148 3.58749 23.8137 3.58749 32.3704C3.58749 40.9271 10.5904 47.9259 19.1617 47.9259C27.733 47.9259 34.7359 40.9271 34.7359 32.3704V16.0741C37.8481 18.4222 41.6544 19.7778 45.7148 19.7778V11.3704C39.4552 11.3704 34.7359 6.65338 34.7359 0Z" fill="currentColor"/>
-            </svg>
-            Se connecter avec TikTok
-        </button>
+        <div id="profile-section" class="profile-container">
+            <div class="profile-header">
+                <img id="profile-avatar" class="profile-avatar" src="" alt="Photo de profil TikTok">
+                <div class="profile-info">
+                    <div id="profile-nickname" class="profile-nickname"></div>
+                    <div class="profile-status">
+                        <svg class="status-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Compte connecté</span>
+                    </div>
+                </div>
+            </div>
+            <div class="success-message">
+                Votre compte TikTok a été lié avec succès !
+            </div>
+        </div>
 
         {% if debug_mode %}
         <div class="debug-info">
@@ -286,16 +377,41 @@
                 if (data.redirect_url) {
                     window.location.href = data.redirect_url;
                 } else {
-                    console.error('URL de redirection non trouvée dans la réponse');
-                    alert('Erreur lors de la connexion à TikTok. Veuillez réessayer.');
-                    loading.classList.remove('active');
+                    throw new Error('URL de redirection non trouvée');
                 }
             } catch (error) {
                 console.error('Erreur:', error);
-                alert('Erreur lors de la connexion à TikTok. Veuillez réessayer.');
+                alert('Erreur lors de la connexion à TikTok');
                 loading.classList.remove('active');
             }
         }
+
+        async function checkAndDisplayProfile() {
+            try {
+                const response = await fetch('https://141.253.120.227:3000/user/profile');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('login-section').style.display = 'none';
+                    
+                    const profileSection = document.getElementById('profile-section');
+                    document.getElementById('profile-avatar').src = data.avatar_url;
+                    document.getElementById('profile-nickname').textContent = data.nickname;
+                    profileSection.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la récupération du profil:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('code')) {
+                setTimeout(checkAndDisplayProfile, 1000);
+            } else {
+                checkAndDisplayProfile();
+            }
+        });
     </script>
 </body>
 </html> 
