@@ -327,14 +327,14 @@ def oauth():
         if debug_mode:
             log(f"   URL d'authentification: {auth_url}", "debug", "🔍")
         
-        # Retourner directement l'URL pour la popup
-        return jsonify({'redirect_url': auth_url})
+        # Rediriger directement vers TikTok
+        return redirect(auth_url)
         
     except Exception as e:
         log(f"❌ Erreur lors de la création de l'URL d'authentification: {str(e)}", "error", "💥")
         if debug_mode:
             log(traceback.format_exc(), "error", "🔍")
-        return jsonify({'error': 'Internal Server Error'}), 500
+        return render_template('close.html', success=False, message="Erreur lors de l'authentification")
 
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
