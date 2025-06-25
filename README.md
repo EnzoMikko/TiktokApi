@@ -130,4 +130,166 @@ En mode debug, des logs détaillés sont disponibles dans la console et les fich
 
 ## Support
 
-Pour toute question ou problème, veuillez ouvrir une issue sur le repository. 
+Pour toute question ou problème, veuillez ouvrir une issue sur le repository.
+
+## Documentation détaillée des endpoints
+
+### 1. Page d'accueil (`GET /`)
+```http
+GET / HTTP/1.1
+Host: localhost:5000
+```
+**Réponse** : Page HTML avec le bouton de connexion TikTok
+
+### 2. Démarrage OAuth (`GET /oauth`)
+```http
+GET /oauth HTTP/1.1
+Host: localhost:5000
+```
+
+**Réponse** : Redirection vers TikTok
+```http
+HTTP/1.1 302 Found
+Location: https://www.tiktok.com/v2/auth/authorize/?client_key=YOUR_CLIENT_KEY&response_type=code&scope=user.info.basic,video.list&redirect_uri=YOUR_REDIRECT_URI&state=RANDOM_STATE
+```
+
+### 3. Webhook (`GET /webhook`)
+#### Réception du code d'autorisation
+```http
+GET /webhook?code=AUTH_CODE&state=RANDOM_STATE HTTP/1.1
+Host: localhost:5000
+```
+
+#### Échange du code contre un token (Appel à l'API TikTok)
+**Requête vers TikTok**
+```http
+POST https://open.tiktokapis.com/v2/oauth/token/
+Content-Type: application/x-www-form-urlencoded
+
+client_key=YOUR_CLIENT_KEY
+&client_secret=YOUR_CLIENT_SECRET
+&code=AUTH_CODE
+&grant_type=authorization_code
+```
+
+**Réponse de TikTok**
+```json
+{
+    "access_token": "act.xxx...",
+    "refresh_token": "rft.xxx...",
+    "open_id": "USER_OPEN_ID",
+    "expires_in": 86400,
+    "scope": "user.info.basic,video.list"
+}
+```
+
+#### Récupération des informations du créateur (Appel à l'API TikTok)
+**Requête vers TikTok**
+```http
+POST https://open.tiktokapis.com/v2/post/publish/creator_info/query/
+Content-Type: application/json
+Authorization: Bearer act.xxx...
+```
+
+**Réponse de TikTok**
+```json
+{
+   "data": {
+      "creator_avatar_url": "https://...",
+      "creator_username": "username",
+      "creator_nickname": "Nickname",
+      "privacy_level_options": ["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "SELF_ONLY"],
+      "comment_disabled": false,
+      "duet_disabled": false,
+      "stitch_disabled": true,
+      "max_video_post_duration_sec": 300
+   },
+   "error": {
+      "code": "ok",
+      "message": "",
+      "log_id": "202210112248442CB9319E1FB30C1073F3"
+   }
+}
+```
+
+**Réponse finale du webhook**
+```json
+{
+    "status": "success",
+    "message": "Token stored successfully"
+}
+```
+
+### 4. Vérification de santé (`GET /health`)
+```http
+GET /health HTTP/1.1
+Host: localhost:5000
+```
+
+**Réponse**
+```json
+{
+    "status": "healthy",
+    "timestamp": "2024-03-25T10:30:00Z"
+}
+```
+
+## Structure des données Supabase
+
+### Table: tiktok_tokens
+Voici la structure des données stockées dans Supabase après une authentification réussie :
+
+```json
+{
+    "id": "uuid",
+    "access_token": "act.xxx...",
+    "refresh_token": "rft.xxx...",
+    "expires_in": 86400,
+    "open_id": "USER_OPEN_ID",
+    "union_id": "UNION_ID",
+    "scope": "user.info.basic,video.list",
+    "creator_avatar_url": "https://...",
+    "creator_username": "username",
+    "creator_nickname": "Nickname",
+    "privacy_level_options": ["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "SELF_ONLY"],
+    "comment_disabled": false,
+    "duet_disabled": false,
+    "stitch_disabled": true,
+    "max_video_post_duration_sec": 300,
+    "created_at": "2024-03-25T10:30:00Z",
+    "updated_at": "2024-03-25T10:30:00Z",
+    "is_active": true
+}
+```
+
+## Gestion des erreurs
+
+### 1. Erreur d'authentification TikTok
+```json
+{
+    "error": {
+        "code": "auth_error",
+        "message": "Invalid authorization code"
+    }
+}
+```
+
+### 2. Erreur de token expiré
+```json
+{
+    "error": {
+        "code": "token_expired",
+        "message": "Access token has expired"
+    }
+}
+```
+
+### 3. Erreur de base de données
+```json
+{
+    "error": {
+        "code": "database_error",
+        "message": "Failed to store token in database"
+    }
+}
+``` 
