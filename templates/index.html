@@ -280,7 +280,7 @@
             loading.classList.add('active');
             
             try {
-                const response = await fetch('/oauth');
+                const response = await fetch('https://141.253.120.227:3000/oauth');
                 const data = await response.json();
                 
                 if (data.redirect_url) {
