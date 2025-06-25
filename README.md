@@ -292,4 +292,160 @@ Voici la structure des données stockées dans Supabase après une authentificat
         "message": "Failed to store token in database"
     }
 }
+```
+
+## Implémentation Frontend
+
+### Structure HTML Essentielle
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Login</title>
+    <!-- Police Inter de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Styles CSS ici */
+    </style>
+</head>
+<body>
+    <!-- Formes d'arrière-plan animées -->
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+
+    <!-- Conteneur principal -->
+    <div class="container">
+        <!-- Logo et titre -->
+        <div class="logo-container">
+            <h1>TikTok Login</h1>
+            <p class="subtitle">Connectez-vous avec votre compte TikTok</p>
+        </div>
+
+        <!-- Bouton de connexion -->
+        <button onclick="startOAuth()" class="tiktok-button">
+            Se connecter avec TikTok
+        </button>
+
+        <!-- Information de debug (optionnel) -->
+        {% if debug_mode %}
+        <div class="debug-info">
+            <p>Mode Debug: Activé</p>
+            <p>Redirect URI: {{ redirect_uri }}</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+```
+
+### Styles CSS Essentiels
+```css
+:root {
+    --primary: #8B5CF6;
+    --primary-dark: #7C3AED;
+    --background: #1A1A2E;
+    --text: #E2E8F0;
+    --text-secondary: #94A3B8;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, var(--background), #2D1B69);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.container {
+    background: rgba(42, 42, 62, 0.7);
+    backdrop-filter: blur(20px);
+    padding: 3rem;
+    border-radius: 24px;
+    text-align: center;
+    max-width: 420px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tiktok-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.875rem 2rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* Styles pour l'effet glassmorphism */
+.background-shapes {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.shape {
+    position: absolute;
+    background: var(--primary);
+    filter: blur(80px);
+    opacity: 0.2;
+    border-radius: 50%;
+}
+```
+
+### JavaScript Minimal
+```javascript
+async function startOAuth() {
+    try {
+        const response = await fetch('https://141.253.120.227:3000/oauth');
+        const data = await response.json();
+        
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+        } else {
+            throw new Error('URL de redirection non trouvée');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur de connexion TikTok');
+    }
+}
+```
+
+### Points Clés de l'Implémentation
+
+1. **Structure de Base**
+   - Utilisation de la police Inter de Google Fonts
+   - Conteneur principal avec effet glassmorphism
+   - Formes d'arrière-plan animées pour un effet dynamique
+
+2. **Design Moderne**
+   - Interface sombre avec effet de flou
+   - Dégradés et effets de survol
+   - Bouton de connexion stylisé
+   - Responsive design
+
+3. **Fonctionnalités**
+   - Bouton de connexion TikTok
+   - Mode debug conditionnel
+   - Gestion des erreurs de base
+
+4. **Sécurité**
+   - Viewport sécurisé
+   - Gestion asynchrone de l'OAuth
+   - Support pour le mode debug
 ``` 
